@@ -95,7 +95,24 @@ export async function generateMetadata(props: {
 }
 
 
-// This async function generates all possible static paths for this page (for static site generation).
+
+/**
+ * This async function enables Static Site Generation (SSG) for this dynamic route in Next.js.
+ *
+ * SSG means that Next.js will pre-render HTML for each possible page at build time, instead of generating it on-demand for every request.
+ * This results in very fast page loads and allows your site to be served as static files from a CDN.
+ *
+ * For dynamic routes (like [slug]), Next.js needs to know all possible values for the slug in advance.
+ * This function returns an array of all possible slugs, so Next.js can generate a static page for each one.
+ *
+ * How it works here:
+ * - It fetches all CMS pages and visual builder experiences from Optimizely.
+ * - It extracts the unique slugs (URL paths) for each page/experience.
+ * - It returns an array of objects like { slug: 'about' }, { slug: 'contact' }, etc.
+ * - Next.js will then generate a static HTML file for each of these paths at build time.
+ *
+ * If a user visits a path that wasn't generated, Next.js will show a 404 page (unless you use fallback rendering).
+ */
 export async function generateStaticParams() {
   try {
     // Define the page types to fetch (CMS pages and visual builder experiences).
@@ -119,6 +136,7 @@ export async function generateStaticParams() {
     })
 
     // Return an array of objects with the slug property for each unique path.
+    // Next.js will use this to statically generate a page for each slug.
     return Array.from(uniquePaths).map((slug) => ({
       slug,
     }))
