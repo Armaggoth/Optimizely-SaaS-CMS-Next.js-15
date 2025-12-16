@@ -34,6 +34,24 @@ yarn-error.log*
 .env
 .env.local
 
+# additional env files
+.env.development
+.env.production
+.env.test
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# Next.js/Turbo/Build
+.turbo/
+dist/
+
+# Miscellaneous
+.eslintcache
+*.local
+*.log
+
 # vercel
 .vercel
 
