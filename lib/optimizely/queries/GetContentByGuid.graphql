@@ -1,16 +1,33 @@
+
+# This is a GraphQL query definition. GraphQL is a query language for APIs, similar to how SQL is for databases.
+# Each query defines what data you want to fetch from the server.
+
 query GetContentByGuid($guid: String) {
+  # 'GetContentByGuid' is the name of the query. The part in parentheses defines the input variables.
+  # Here, $guid is a variable of type String, which you provide when calling the query.
+
   _Content(where: { _metadata: { key: { eq: $guid } } }) {
+    # '_Content' is the name of the data collection/table you are querying.
+    # 'where' is a filter, like a WHERE clause in SQL.
+    # This filter says: only return content where the metadata key equals the provided $guid variable.
+
     item {
+      # 'item' is the field inside the _Content result. It represents the actual content item found.
+
       _metadata {
-        displayName
-        version
-        key
+        # '_metadata' is a nested object containing metadata about the content item.
+
+        displayName   # The display name/title of the content item.
+        version       # The version number of the content item.
+        key           # The unique key (should match the $guid you searched for).
+
         url {
-          base
-          internal
-          hierarchical
-          default
-          type
+          # 'url' is a nested object with different URL formats for the content item.
+          base           # The base URL for the content.
+          internal       # The internal URL (used inside the system).
+          hierarchical   # The hierarchical URL (shows the structure/path).
+          default        # The default URL for the content.
+          type           # The type of URL (e.g., absolute, relative).
         }
       }
     }
