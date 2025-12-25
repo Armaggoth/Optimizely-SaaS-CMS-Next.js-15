@@ -43,35 +43,57 @@ import { Suspense } from 'react'
 export async function generateMetadata(props: {
   params: Promise<{ locale: string; slug?: string }>
 }): Promise<Metadata> {
+  const startTime = Date.now()
   // Extract the locale and slug from the route parameters (e.g., 'en', 'about').
   const { locale, slug = '' } = await props.params
+  console.log(`[METADATA] Starting metadata generation for /${locale}/${slug}`)
+  
   // Validate and normalize the locale.
   const locales = getValidLocale(locale)
   // Format the slug as a path (e.g., '/about').
   const formattedSlug = `/${slug}`
+  
+  console.log(`[METADATA] Fetching page data for ${formattedSlug} in locale ${locales}`)
+  const apiStartTime = Date.now()
+  
   // Fetch the page data for the given locale and slug from the CMS.
   const { data, errors } = await optimizely.getPageByURL({
     locales: [locales],
     slug: formattedSlug,
   })
+  
+  const apiEndTime = Date.now()
+  console.log(`[METADATA] getPageByURL took ${apiEndTime - apiStartTime}ms for ${formattedSlug}`)
 
   // If there are errors, return an empty metadata object.
   if (errors) {
+    console.log(`[METADATA] Errors found for ${formattedSlug}:`, errors)
+    const totalTime = Date.now() - startTime
+    console.log(`[METADATA] Total metadata generation time: ${totalTime}ms for ${formattedSlug} (with errors)`)
     return {}
   }
 
   // Extract the page item from the response.
   const page = data?.CMSPage?.item
   if (!page) {
+    console.log(`[METADATA] No CMSPage found for ${formattedSlug}, trying visual builder experience`)
+    const vbStartTime = Date.now()
+    
     // If no page is found, try to fetch a visual builder experience for this slug.
     const experienceData = await optimizely.GetVisualBuilderBySlug({
       locales: [locales],
       slug: formattedSlug,
     })
+    
+    const vbEndTime = Date.now()
+    console.log(`[METADATA] GetVisualBuilderBySlug took ${vbEndTime - vbStartTime}ms for ${formattedSlug}`)
 
     const experience = experienceData.data?.SEOExperience?.item
 
     if (experience) {
+      console.log(`[METADATA] Visual builder experience found for ${formattedSlug}`)
+      const totalTime = Date.now() - startTime
+      console.log(`[METADATA] Total metadata generation time: ${totalTime}ms for ${formattedSlug} (visual builder)`)
       // If a visual builder experience is found, return its metadata.
       return {
         title: experience?.title,
@@ -81,10 +103,17 @@ export async function generateMetadata(props: {
       }
     }
 
+    console.log(`[METADATA] No content found for ${formattedSlug}`)
+    const totalTime = Date.now() - startTime
+    console.log(`[METADATA] Total metadata generation time: ${totalTime}ms for ${formattedSlug} (no content)`)
     // If nothing is found, return an empty metadata object.
     return {}
   }
 
+  console.log(`[METADATA] CMSPage found for ${formattedSlug}`)
+  const totalTime = Date.now() - startTime
+  console.log(`[METADATA] Total metadata generation time: ${totalTime}ms for ${formattedSlug} (success)`)
+  
   // Return the metadata object for Next.js to use in the <head>.
   return {
     title: page.title, // The page title
@@ -152,15 +181,20 @@ export async function generateStaticParams() {
 export default async function CmsPage(props: {
   params: Promise<{ locale: string; slug?: string }>
 }) {
+  const componentStartTime = Date.now()
   // Extract the locale and slug from the route parameters.
   const { locale, slug = '' } = await props.params
+  console.log(`[COMPONENT] Starting component render for /${locale}/${slug}`)
+  
   // Validate and normalize the locale.
   const locales = getValidLocale(locale)
   // Format the slug as a path (e.g., '/about').
   const formattedSlug = `/${slug}`
+  
   // Check if the site is in draft/preview mode (for content editors).
   const { isEnabled: isDraftModeEnabled } = await draftMode()
   if (isDraftModeEnabled) {
+    console.log(`[COMPONENT] Draft mode enabled for ${formattedSlug}`)
     // If in draft mode, show the DraftModeCmsPage component inside a Suspense boundary.
     // Suspense allows you to show a fallback (DraftModeLoader) while loading async content.
     return (
@@ -170,18 +204,30 @@ export default async function CmsPage(props: {
     )
   }
 
+  console.log(`[COMPONENT] Fetching page data for component render: ${formattedSlug}`)
+  const componentApiStartTime = Date.now()
+  
   // Fetch the page data for the given locale and slug from the CMS.
   const { data, errors } = await optimizely.getPageByURL({
     locales: [locales],
     slug: formattedSlug,
   })
+  
+  const componentApiEndTime = Date.now()
+  console.log(`[COMPONENT] getPageByURL (component) took ${componentApiEndTime - componentApiStartTime}ms for ${formattedSlug}`)
 
   // If there are errors or the page is not found/modified, try to fetch a visual builder experience.
   if (errors || !data?.CMSPage?.item?._modified) {
+    console.log(`[COMPONENT] No CMSPage or errors for ${formattedSlug}, trying visual builder experience`)
+    const componentVbStartTime = Date.now()
+    
     const experienceData = await optimizely.GetVisualBuilderBySlug({
       locales: [locales],
       slug: formattedSlug,
     })
+    
+    const componentVbEndTime = Date.now()
+    console.log(`[COMPONENT] GetVisualBuilderBySlug (component) took ${componentVbEndTime - componentVbStartTime}ms for ${formattedSlug}`)
 
     // Extract the experience item from the response.
     const experience = experienceData.data?.SEOExperience?.item as
@@ -189,6 +235,9 @@ export default async function CmsPage(props: {
       | undefined
 
     if (experience) {
+      console.log(`[COMPONENT] Visual builder experience found for ${formattedSlug}`)
+      const totalComponentTime = Date.now() - componentStartTime
+      console.log(`[COMPONENT] Total component render time: ${totalComponentTime}ms for ${formattedSlug} (visual builder)`)
       // If a visual builder experience is found, render it using the wrapper component.
       return (
         <Suspense>
@@ -197,16 +246,25 @@ export default async function CmsPage(props: {
       )
     }
 
+    console.log(`[COMPONENT] No content found for ${formattedSlug}, showing 404`)
+    const totalComponentTime = Date.now() - componentStartTime
+    console.log(`[COMPONENT] Total component render time: ${totalComponentTime}ms for ${formattedSlug} (404)`)
     // If nothing is found, show a 404 Not Found page.
     return notFound()
   }
 
+  console.log(`[COMPONENT] CMSPage found for ${formattedSlug}`)
+  
   // Extract the page item from the response.
   const page = data.CMSPage.item
   // Get the blocks array, filtering out null/undefined values.
   const blocks = (page?.blocks ?? []).filter(
     (block) => block !== null && block !== undefined
   )
+
+  console.log(`[COMPONENT] Found ${blocks.length} blocks for ${formattedSlug}`)
+  const totalComponentTime = Date.now() - componentStartTime
+  console.log(`[COMPONENT] Total component render time: ${totalComponentTime}ms for ${formattedSlug} (success)`)
 
   // Render the content blocks using ContentAreaMapper inside a Suspense boundary.
   return (

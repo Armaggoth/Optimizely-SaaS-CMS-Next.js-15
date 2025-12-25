@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  // Increase build timeout for slow CMS API calls
+  staticPageGenerationTimeout: 300, // 5 minutes instead of default 60 seconds
+  
   eslint: {
     // Disabling on production builds because we're running checks on PRs via GitHub Actions.
     ignoreDuringBuilds: true,

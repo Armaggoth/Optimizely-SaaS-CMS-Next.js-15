@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
-    "gen-types": "graphql-codegen -r dotenv/config --config ./codegen.yaml"
+    "gen-types": "cross-env DOTENV_CONFIG_PATH=.env.local graphql-codegen -r dotenv/config --config ./codegen.yaml"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown"
