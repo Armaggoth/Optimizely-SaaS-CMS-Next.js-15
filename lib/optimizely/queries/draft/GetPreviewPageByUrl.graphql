@@ -1,3 +1,72 @@
+# ==============================================================================
+# OPTIMIZELY GRAPHQL QUERY - PREVIEW CONTENT PAGE BY URL
+# ==============================================================================
+#
+# This GraphQL query fetches a specific CMS page by its URL slug for preview mode.
+# This is used when displaying draft versions of content pages (not home page).
+#
+# FOR .NET DEVELOPERS:
+# Think of this as the equivalent of a SQL stored procedure that:
+# - Takes parameters for localization, page slug, and version
+# - Returns the page data and its content blocks for preview display
+#
+# Compare to ASP.NET Web API or MVC Controller method:
+#   [HttpGet("preview/{slug}")]
+#   public async Task<IActionResult> GetPreviewPage(string slug, string locale, string version)
+#   {
+#       var page = await _cmsService.GetPageByUrlAsync(slug, locale, version);
+#       return Ok(page);
+#   }
+#
+# ==============================================================================
+# WHERE THIS IS USED:
+# ==============================================================================
+#
+# PRIMARY USAGE:
+# ├── app/(draft)/[locale]/draft/[version]/[slug]/page.tsx
+# │   ├── Line 199 - Direct call: await optimizely.getPreviewPageByURL(...)
+# │   ├── Function: ContentPage() - Component that renders any content page in draft mode
+# │   └── Purpose: Fetch specific page content by URL slug for draft preview
+#
+# TYPE GENERATION:
+# ├── lib/optimizely/types/generated.ts
+# │   ├── Line 5885 - GetPreviewPageByUrlQueryVariables interface (input types)
+# │   ├── Line 5892 - GetPreviewPageByUrlQuery interface (return types)
+# │   ├── Line 6416 - GetPreviewPageByUrlDocument constant (compiled query)
+# │   └── Line 6535 - getPreviewPageByURL method on Optimizely client
+#
+# DEBUGGING LOCATIONS:
+# ├── Browser Dev Tools → Network tab → "getPreviewPageByURL" to see the actual GraphQL request
+# ├── Check page response data structure in draft page components
+# └── Verify URL matching and version parameters are correctly passed
+#
+# ==============================================================================
+# GRAPHQL CONCEPTS FOR .NET DEVELOPERS:
+# ==============================================================================
+#
+# WHAT IS GRAPHQL?
+# - GraphQL is like a strongly-typed SQL query language for APIs
+# - Instead of calling multiple REST endpoints, you write one query that gets exactly what you need
+# - Similar to how you'd write a SQL SELECT with JOINs to get related data in one trip
+#
+# QUERY PARAMETERS (like stored procedure parameters):
+# - $locales: Array of language codes (en, sv, etc.) - Like @Culture parameter in SQL
+# - $slug: The URL path of the page to find (e.g., "about-us", "contact") - Like @PageUrl parameter
+# - $version: Draft version identifier to fetch specific preview version - Like @VersionId parameter
+#
+# QUERY STRUCTURE BREAKDOWN:
+# - CMSPage(...): Like calling a repository method GetPages() with filters
+# - _metadata: { version: { eq: $version } }: Filters by specific draft version
+# - _and: { _metadata: { url: { default: { eq: $slug } } } }: AND condition to match URL slug
+# - This is like SQL: WHERE Version = @Version AND Url = @Slug
+#
+# RETURN DATA:
+# - item { blocks { ...ItemsInContentArea } }: Returns the page with all its content blocks
+# - ItemsInContentArea is a fragment (like a SQL view) that includes all possible block types
+# - Think of this like returning a PageModel with a List<ContentBlock> property
+#
+# ==============================================================================
+
 query getPreviewPageByURL(
   $locales: [Locales]
   $slug: String

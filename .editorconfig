@@ -1,0 +1,55 @@
+# EditorConfig helps maintain consistent coding styles across editors and IDEs
+# For more info: https://editorconfig.org/
+
+# Top-level configuration
+root = true
+
+# All files
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 2
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Markdown files (don't trim trailing whitespace for compatibility)
+[*.md]
+trim_trailing_whitespace = false
+
+# JSON files
+[*.json]
+indent_size = 2
+
+# YAML files
+[*.yaml]
+indent_size = 2
+
+# TypeScript/JavaScript files
+[*.ts]
+indent_size = 2
+[*.tsx]
+indent_size = 2
+[*.js]
+indent_size = 2
+[*.jsx]
+indent_size = 2
+
+# CSS files
+[*.css]
+indent_size = 2
+
+# Ignore build output and dependencies
+[.next/**]
+trim_trailing_whitespace = false
+[build/**]
+trim_trailing_whitespace = false
+[node_modules/**]
+trim_trailing_whitespace = false
+
+# Comments:
+# - trim_trailing_whitespace removes spaces at the end of lines
+# - insert_final_newline ensures files end with a newline
+# - indent_size and indent_style enforce 2-space indentation (Next.js/React best practice)
+# - end_of_line = lf for cross-platform compatibility
+# - charset = utf-8 for modern encoding

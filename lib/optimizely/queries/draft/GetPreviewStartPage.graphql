@@ -1,12 +1,234 @@
+#  GRAPHQL QUERY: GET PREVIEW START PAGE - Think of this as a SQL Query or Stored Procedure
+#
+#  This file defines a database query that fetches draft/preview content for the home page.
+#  In ASP.NET terms, this is similar to:
+#  - A SQL stored procedure that retrieves CMS content: EXEC GetPreviewHomePage @Locale, @Version
+#  - A LINQ query in Entity Framework: context.Pages.Where(p => p.Locale == locale && p.Version == version)
+#  - A method in a data access layer that returns page content and blocks
+#
+#  ================================================================================
+#  WHERE THIS QUERY IS USED - File Dependencies and Usage Locations
+#  ================================================================================
+#
+#  PRIMARY USAGE:
+#  └── app/(draft)/[locale]/draft/[version]/page.tsx (Draft Home Page Component)
+#      ├── Line 168 - const pageResponse = await optimizely.GetPreviewStartPage(...)
+#      ├── Parameters: { locales, version } - language and content version
+#      ├── Options: { preview: true } - include draft/unpublished content
+#      └── Purpose: Fetch specific version of home page content for preview
+#
+#  DOCUMENTATION REFERENCES:
+#  └── docs/draft-mode.md (Draft Mode Documentation)
+#      ├── Line 268 - Example usage: await optimizely.GetPreviewStartPage(...)
+#      ├── Line 294 - File reference: lib/optimizely/queries/draft/GetPreviewStartPage.graphql
+#      └── Purpose: Technical documentation showing implementation
+#
+#  GENERATED CODE FILES:
+#  └── lib/optimizely/types/generated.ts (Auto-generated TypeScript Types)
+#      ├── Line 5894 - export type GetPreviewStartPageQueryVariables
+#      ├── Line 5900 - export type GetPreviewStartPageQuery
+#      ├── Line 6430 - export const GetPreviewStartPageDocument
+#      └── Line 6538 - GetPreviewStartPage method definition
+#
+#  RELATIVE PATHS FROM THIS FILE:
+#  - Page component that calls this: ../../../app/(draft)/[locale]/draft/[version]/page.tsx
+#  - Documentation that references it: ../../../docs/draft-mode.md
+#  - Generated TypeScript types: ../types/generated.ts
+#  - Block fragments used: ../fragments/Block.graphql
+#  - GraphQL client that executes this: ../fetch.ts
+#
+#  QUERY DEPENDENCY TREE:
+#  GetPreviewStartPage (this file)
+#  ├── Uses: ItemsInContentArea fragment (from ../fragments/Block.graphql)
+#  ├── Generates: TypeScript types in ../types/generated.ts
+#  ├── Called by: app/(draft)/[locale]/draft/[version]/page.tsx
+#  └── Executes against: Optimizely Content Graph API
+#
+#  IN ASP.NET TERMS:
+#  This is like a parameterized SQL query or stored procedure that:
+#  - Takes locale and version as parameters
+#  - Joins content tables to get page data with blocks
+#  - Returns structured data for a specific content version
+#  - Is called from a page's code-behind or controller action
+#
+#  WHAT IS GRAPHQL?
+#  - Query language for APIs (like SQL for databases)
+#  - Allows requesting specific data fields (no over-fetching)
+#  - Strongly typed (like C# interfaces)
+#  - Single endpoint (unlike REST with multiple URLs)
+#  - Think of it as a more flexible, type-safe way to call web services
+#
+#  ================================================================================
+
+# QUERY DEFINITION - Like a method signature in C#
+# query GetPreviewStartPage = public async Task<StartPageData> GetPreviewStartPage(string[] locales, string version)
 query GetPreviewStartPage($locales: [Locales], $version: String) {
+  # QUERY PARAMETERS EXPLANATION:
+  # $locales: [Locales] = Array of language codes (like ["en", "sv"] in C#)
+  # $version: String = Content version identifier (like "123" or "456")
+  #
+  # Similar to SQL parameters: @Locales NVARCHAR(50), @Version NVARCHAR(50)
+  # Or C# method parameters: async Task<PageData> GetPage(string[] locales, string version)
+
+  # MAIN DATA FETCH - Query the StartPage content type
+  # This is like: SELECT * FROM StartPages WHERE Locale IN (@locales) AND Version = @version
   StartPage(
-    locale: $locales
-    where: { _metadata: { version: { eq: $version } } }
+    locale: $locales    # Filter by language/locale (WHERE Locale IN (@locales))
+    where: { _metadata: { version: { eq: $version } } }    # Filter by specific version (WHERE Version = @version)
   ) {
+    # RESPONSE STRUCTURE - What data to return
+    # Think of this like defining which columns/properties to include in the result
+
     item {
+      # GET CONTENT BLOCKS - Fetch all content blocks that make up this page
+      # Similar to: SELECT * FROM ContentBlocks WHERE PageId = @pageId
+      # Or in Entity Framework: page.ContentBlocks.ToList()
       blocks {
+        # FRAGMENT INCLUSION - Use predefined field selections
+        # ...ItemsInContentArea is like calling a reusable method or view
+        # It's defined in ../fragments/Block.graphql and includes fields for different block types
         ...ItemsInContentArea
+
+        # FRAGMENT EXPLANATION:
+        # ItemsInContentArea fragment includes all the specific fields needed for different content block types:
+        # - HeroBlock: title, subtitle, decoration colors
+        # - ContactBlock: title, description
+        # - LogosBlock: logo items with src and alt
+        # - PortfolioGridBlock: title and portfolio items
+        # - And many more block types...
+        #
+        # This is similar to having a C# interface or base class that different block types implement:
+        # interface IContentBlock { string __typename; }
+        # class HeroBlock : IContentBlock { string Title; string Subtitle; }
+        # class ContactBlock : IContentBlock { string Title; string Description; }
       }
     }
   }
 }
+
+# ================================================================================
+# HOW THIS QUERY WORKS - COMPLETE EXPLANATION
+# ================================================================================
+#
+# TYPICAL EXECUTION FLOW:
+#
+# 1. CONTENT EDITOR SCENARIO
+#    - Editor clicks "Preview" in Optimizely CMS for home page version 123
+#    - Draft API redirects to: /en/draft/123/
+#    - Page component executes this query with parameters: locales=["en"], version="123"
+#    - Optimizely returns home page content with all content blocks for that version
+#    - Page renders preview with blocks like hero sections, contact forms, etc.
+#
+# 2. TECHNICAL EXECUTION FLOW
+#    Step 1: app/(draft)/[locale]/draft/[version]/page.tsx calls optimizely.GetPreviewStartPage()
+#    Step 2: GraphQL client sends this query to Optimizely Content Graph API
+#    Step 3: Optimizely processes query and finds matching StartPage with specified version
+#    Step 4: For each content block, it applies the ItemsInContentArea fragment
+#    Step 5: Returns structured JSON with page data and all content block details
+#    Step 6: Page component extracts blocks array and passes to ContentAreaMapper
+#    Step 7: ContentAreaMapper renders each block based on its __typename
+#
+# COMPARISON TO ASP.NET DATA ACCESS PATTERNS:
+#
+# Traditional ASP.NET with SQL:
+# using (var connection = new SqlConnection(connectionString))
+# {
+#     var command = new SqlCommand("EXEC GetPreviewHomePage @Locale, @Version", connection);
+#     command.Parameters.AddWithValue("@Locale", "en");
+#     command.Parameters.AddWithValue("@Version", "123");
+#     var reader = command.ExecuteReader();
+#     // Process results...
+# }
+#
+# Entity Framework Equivalent:
+# var homePage = await context.StartPages
+#     .Where(p => p.Locale == "en" && p.Version == "123")
+#     .Include(p => p.ContentBlocks)
+#         .ThenInclude(b => b.HeroBlockData)
+#     .Include(p => p.ContentBlocks)
+#         .ThenInclude(b => b.ContactBlockData)
+#     .FirstOrDefaultAsync();
+#
+# WCF/Web Service Equivalent:
+# var client = new CMSServiceClient();
+# var request = new GetPreviewHomePageRequest
+# {
+#     Locale = "en",
+#     Version = "123"
+# };
+# var response = await client.GetPreviewHomePageAsync(request);
+# var blocks = response.HomePage.ContentBlocks;
+#
+# KEY DIFFERENCES FROM ASP.NET:
+#
+# 1. DECLARATIVE QUERIES
+#    - Specify exactly what data you need (no over-fetching)
+#    - No need to write JOIN statements or complex LINQ
+#    - GraphQL engine optimizes the actual database queries
+#
+# 2. STRONG TYPING
+#    - Query structure is validated at build time
+#    - TypeScript types are auto-generated from this query
+#    - Compile-time errors if you try to access non-existent fields
+#
+# 3. SINGLE ENDPOINT
+#    - One URL handles all queries (unlike REST with multiple endpoints)
+#    - No need to manage different service contracts or controllers
+#    - Better performance due to reduced HTTP overhead
+#
+# 4. FRAGMENT REUSE
+#    - ItemsInContentArea fragment can be used in multiple queries
+#    - Similar to having reusable SQL views or C# DTOs
+#    - Ensures consistency across different queries
+#
+# EXPECTED RESPONSE STRUCTURE:
+#
+# The query returns JSON like this:
+# {
+#   "data": {
+#     "StartPage": {
+#       "item": {
+#         "blocks": [
+#           {
+#             "__typename": "HeroBlock",
+#             "title": "Welcome to Our Site",
+#             "subtitle": "Discover amazing content",
+#             "decorationColorsPrimary": "#FF0000",
+#             "decorationColorsSecondary": "#00FF00",
+#             "showDecoration": true
+#           },
+#           {
+#             "__typename": "ContactBlock",
+#             "title": "Get in Touch",
+#             "description": "Contact us for more information"
+#           },
+#           // More blocks...
+#         ]
+#       }
+#     }
+#   }
+# }
+#
+# PERFORMANCE CONSIDERATIONS:
+#
+# - Only fetches data actually requested (no unnecessary fields)
+# - Fragment reuse reduces query size and complexity
+# - Optimizely optimizes the underlying database queries
+# - Results can be cached based on locale and version parameters
+#
+# ERROR HANDLING:
+#
+# Common scenarios and responses:
+# - Invalid version: Returns null item (handled in page component)
+# - Invalid locale: Returns empty result (getValidLocale handles this)
+# - Network issues: GraphQL client throws exception (page component handles)
+# - Malformed query: Build-time error (TypeScript validation)
+#
+# DEBUGGING TIPS:
+#
+# 1. Use GraphQL Playground to test queries manually
+# 2. Check generated TypeScript types in ../types/generated.ts
+# 3. Verify fragment definitions in ../fragments/Block.graphql
+# 4. Use browser network tab to inspect actual GraphQL requests
+# 5. Add console.log in page component to inspect returned data
+# 6. Check if preview: true option is properly passed to include draft content
